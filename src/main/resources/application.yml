@@ -1,6 +1,6 @@
 ## 端口号  上下文路径
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /crm
 
@@ -19,6 +19,29 @@ spring:
     content-type: text/html
     charset: UTF-8
     template-loader-path: classpath:/views/
+
+#  redis配置
+  redis:
+    # Redis服务器地址
+    host: 192.168.194.100
+    # Redis服务器端口
+    port: 6389
+    # Redis服务器端口
+    password: 123456
+    # Redis服务器端口
+    database: 0
+    # 连接超时时间
+    timeout: 10000ms
+    lettuce:
+      pool:
+        # 最大连接数，默认8
+        max-active: 1024
+        # 最大连接阻塞等待时间，单位毫秒，默认-1ms
+        max-wait: 10000ms
+        # 最大空闲连接，默认8
+        max-idle: 200
+        # 最小空闲连接，默认0
+        min-idle: 5
 
   ## 启用热部署
 #  devtools:

@@ -48,7 +48,7 @@ public class SaleChanceController extends BaseController {
     @ResponseBody
     public Map<String,Object> list(SaleChanceQuery saleChanceQuery){
         //调用方法获取数据
-        Map<String, Object> map = saleChanceService.querySaleChanceByParams(saleChanceQuery);
+        Map<String, Object> map = saleChanceService.querySaleChanceByParams02(saleChanceQuery);
         //map——>json
         //转发
         return map;

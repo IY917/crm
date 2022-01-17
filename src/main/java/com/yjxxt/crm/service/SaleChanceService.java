@@ -8,16 +8,25 @@ import com.yjxxt.crm.query.SaleChanceQuery;
 import com.yjxxt.crm.utils.AssertUtil;
 import com.yjxxt.crm.utils.PhoneUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 public class SaleChanceService extends BaseService<SaleChance,Integer> {
+
+    @Resource
+    private RedisTemplate<String,Object> redisTemplate;
+    @Resource(name = "redisTemplate")
+    private ValueOperations<String,Object> valueOperations;
+
     /**
      * 条件查询——>列表
      *
@@ -33,6 +42,44 @@ public class SaleChanceService extends BaseService<SaleChance,Integer> {
         PageHelper.startPage(saleChanceQuery.getPage(),saleChanceQuery.getLimit());
         //开始分页
         PageInfo<SaleChance> plist=new PageInfo<>(selectByParams(saleChanceQuery));
+        //准备数据
+        map.put("code",0);
+        map.put("msg","success");
+        map.put("count",plist.getTotal());
+        map.put("data",plist.getList());
+        //转发
+        return map;
+    }
+
+    public Map<String,Object> querySaleChanceByParams02(SaleChanceQuery saleChanceQuery){
+        StringBuffer keyBuffer=new StringBuffer("saleChance:list:page:"+saleChanceQuery.getPage()+":limit:"+saleChanceQuery.getLimit());
+        if(StringUtils.isNotBlank(saleChanceQuery.getCustomerName())){
+            keyBuffer.append(":customerName:"+saleChanceQuery.getCustomerName());
+        }
+        if(StringUtils.isNotBlank(saleChanceQuery.getCreateMan())){
+            keyBuffer.append(":createMan:"+saleChanceQuery.getCreateMan());
+        }
+        if(StringUtils.isNotBlank(saleChanceQuery.getState())){
+            keyBuffer.append(":state:"+saleChanceQuery.getState());
+        }
+        PageInfo<SaleChance> plist=null;
+        String key=keyBuffer.toString();
+        //缓存key存在
+        if(redisTemplate.hasKey(key)){
+            plist=(PageInfo<SaleChance>)valueOperations.get(key);
+        }else {
+            //实例化分页单位
+            PageHelper.startPage(saleChanceQuery.getPage(),saleChanceQuery.getLimit());
+            //开始分页
+            plist=new PageInfo<>(selectByParams(saleChanceQuery));
+            //如果数据存在，将结果存入缓存
+            if(plist.getTotal()>0){
+                valueOperations.set(key,plist);
+            }
+        }
+
+        //实例化
+        Map<String,Object> map=new HashMap<>();
         //准备数据
         map.put("code",0);
         map.put("msg","success");
@@ -126,5 +173,8 @@ public class SaleChanceService extends BaseService<SaleChance,Integer> {
     public void removeSaleChanceIds(Integer [] ids){
         AssertUtil.isTrue(ids==null && ids.length==0,"请选择要删除的数据");
         AssertUtil.isTrue(deleteBatch(ids)!=ids.length,"批量删除失败");
+
+        //缓存更新   匹配待更新的key
+        redisTemplate.delete(redisTemplate.keys("saleChance:list*"));
     }
 }
